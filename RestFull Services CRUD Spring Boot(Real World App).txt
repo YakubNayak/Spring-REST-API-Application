@@ -1,0 +1,325 @@
+
+RestFull Services CRUD With Spring Boot and Post Man (Real World App)
+--------------------------------------------------------------------------------------------------
+
+
+Required Files are
+------------------------
+1. Student.java   -----------Entity Class
+2. StudentRepo.java    (interface)----> @Repository
+3. StudentService.java         (interface)   with All Abstracted Methods for prepare Business Logic
+4. StudentServiceImpl.java    (@Service)   class   Implements All Methods
+5. StudentController.java       (@Controller)     Handle Request and Response 
+6. application.properties      (portno & DB conn & HB Dialect Properties)
+7. AppTest.java         (@SpringBootApplication)
+=====================================================
+Required Jars Are
+------------------------------
+1. Spring Data JPA
+2. Spring web
+3. Spring Dev Tools
+4. MysqlDB/ OracleDB
+
+
+
+
+
+
+
+
+--------------------------------------------------------------------------
+Student.java
+----------------
+package com.yakub.model;
+
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.Table;
+
+@Entity
+@Table(name="stud1")
+public class Student {
+	
+	@Id
+	@Column(name="sid")
+	private Integer stdId;
+	@Column(name="sname")
+	private String stdName;
+	private String course;
+	private Double fee;
+	//PDC+PPC+PSM+PGM+toString()
+	public Student() {
+		super();
+	}
+	public Student(Integer stdId, String stdName, String course, Double fee) {
+		super();
+		this.stdId = stdId;
+		this.stdName = stdName;
+		this.course = course;
+		this.fee = fee;
+	}
+	public Integer getStdId() {
+		return stdId;
+	}
+	public void setStdId(Integer stdId) {
+		this.stdId = stdId;
+	}
+	public String getStdName() {
+		return stdName;
+	}
+	public void setStdName(String stdName) {
+		this.stdName = stdName;
+	}
+	public String getCourse() {
+		return course;
+	}
+	public void setCourse(String course) {
+		this.course = course;
+	}
+	public Double getFee() {
+		return fee;
+	}
+	public void setFee(Double fee) {
+		this.fee = fee;
+	}
+	@Override
+	public String toString() {
+		return "Student [stdId=" + stdId + ", stdName=" + stdName + ", course=" + course + ", fee=" + fee + "]";
+	}
+
+}
+
+
+
+
+==========================================================
+StudentRepo.java
+--------------------------
+package com.yakub.repo;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import com.yakub.entity.Student;
+@Repository
+public interface StudentRepo extends JpaRepository<Student, Integer> {
+
+}
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+StudentService.java
+-------------------------
+
+package com.yakub.service;
+
+import java.util.List;
+
+import com.yakub.model.Student;
+
+public interface StudentService {
+	
+	public Student saveStudent(Student student);
+	public Student updateStudent(Student student,Integer sid);
+	public void deleteStudent(Integer stdId);
+	public Student getStudent(Integer stdId);
+	public List<Student> getAllStudent();
+}
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+StudentServiceImpl .java
+-----------------------------------
+package com.yakub.service;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
+import com.yakub.model.Student;
+import com.yakub.repo.StudentRepo;
+
+@Service
+public class StudentServiceImp implements StudentService {
+
+	@Autowired
+	private StudentRepo stdRepo;
+
+	@Override
+	public Student saveStudent(Student student) {
+
+		Student s1=stdRepo.save(student);
+		return s1;
+	}
+
+	@Override
+	public void deleteStudent(Integer stdId) {
+
+		stdRepo.deleteById(stdId);
+	}
+	
+	@Override
+	public Student getStudent(Integer stdId) {
+		Student s2=stdRepo.findById(stdId).get();
+		return s2;
+	}
+
+	@Override
+	public List<Student> getAllStudent() {
+		
+		List<Student> studentList=stdRepo.findAll();
+		return studentList;
+	
+	}
+	
+	@Override
+	public Student updateStudent(Student student,Integer sid) {
+		Optional<Student> optional=stdRepo.findById(sid);
+		Student student1=optional.get();
+		student1.setStdId(sid);
+		student1.setStdName(student.getStdName());
+		student1.setCourse(student.getCourse());
+		student1.setFee(student.getFee());
+		return stdRepo.save(student1); 
+	}
+}
+
+=============================================================
+StudentRestController.java
+-----------------------------------
+
+
+package com.yakub.controller;
+
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.yakub.model.Student;
+import com.yakub.service.StudentService;
+
+@RestController
+public class StudentController {
+
+	@Autowired
+	private StudentService stdService;
+
+	@PostMapping("/save")
+	public String save(@RequestBody Student std)
+	{
+		Student ss=stdService.saveStudent(std);
+		String message = null;
+		if (ss!= null) {
+			message = "Student saved successfully in DataBase";
+		}
+		else 
+		{
+			message = "Student not save in Database";
+		}
+		return message; 
+	}
+
+	@DeleteMapping("/delete/{sid}")
+	public void delete(@PathVariable Integer sid)
+	{
+		stdService.deleteStudent(sid);
+	}
+	@GetMapping("/get/{sid}")
+	public Student getOne(@PathVariable Integer sid)
+	{
+		Student s2=stdService.getStudent(sid);
+		return s2;
+	}
+
+	@GetMapping("/getAll")
+	public List<Student> getAll() {
+
+		List<Student> students=stdService.getAllStudent();
+		return students;
+
+	}
+
+	@PutMapping("/update/{sid}")
+	public Student updateStudent(@RequestBody Student student,
+			@PathVariable Integer sid) 
+	{
+		return stdService.updateStudent(student, sid);   // save for update record                         
+	}
+	
+}
+
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+application.properties
+-------------------------------
+
+server.port:1234
+# Database related properties
+spring.datasource.url=jdbc:mysql://localhost:3306/mdb?useSSL=false&serverTimezone=UTC
+spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
+spring.datasource.username=root
+spring.datasource.password=root
+
+# Jpa properties/ HB related properties
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.database-platform=org.hibernate.dialect.MySQL8Dialect
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+SpringBootPostManApplication .java
+----------------------------------------------
+
+package com.yakub;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class StudentRestapRealAppnApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(StudentRestapRealAppnApplication.class, args);
+	}
+
+}
+
+--------------------------------------------------------------------------------------------------------------------------------
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+output
+----------------
+http://localhost:1234/save    -------------> POST------------------Submit
+
+{
+    "stdId":105,
+    "stdName":"Sairam",
+    "stdCourse":"React Js"
+}
+
+
+
+
+Student saved successfully in DataBase
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+************ALL THE BEST***************************
++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+
